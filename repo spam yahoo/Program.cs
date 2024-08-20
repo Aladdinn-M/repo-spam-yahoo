@@ -36,20 +36,25 @@ internal class Program
 
     private static IWebDriver InitializeWebDriver()
     {
-    
-        IWebDriver driver = new FirefoxDriver();
+        FirefoxOptions options = new FirefoxOptions();
+        Proxy proxy = new Proxy();
+        proxy.HttpProxy = "45.43.71.235:6833";
+        options.Proxy = proxy;  
+
+
+        IWebDriver driver = new FirefoxDriver(options);
         driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
 
-        try
-        {
+       // try
+       // {
             string url = "https://mail.yahoo.com/d/folders/1";
             driver.Manage().Window.Maximize();
             driver.Navigate().GoToUrl(url);
-        }
-        catch (Exception)
-        {
-            Console.WriteLine("--------------error in openning browser!!");
-        }
+       // }
+      //  catch (Exception)
+       // {
+      //      Console.WriteLine("--------------error in openning browser!!");
+      //  }
 
         return driver;
     }
@@ -98,8 +103,8 @@ internal class Program
 
     private static void fillLoginFields(IWebDriver driver, int index,string emailFilePath)
     {
-       // try
-        //{
+        try
+        {
 
 
             string email = extractfile(0, index, emailFilePath, driver);
@@ -114,7 +119,7 @@ internal class Program
                 passeTheCaptcha(driver, 1, emailFilePath);
 
 
-            /* // Output the sitekey
+             // Output the sitekey
 
             IWebElement passInput = driver.FindElement(By.CssSelector(""));
             string password = extractfile(1, index, emailFilePath, driver);
@@ -125,7 +130,7 @@ internal class Program
         {
 
             Console.WriteLine("--------------error in login into email");
-        }*/
+        }
         
     }
 
@@ -204,7 +209,7 @@ internal class Program
         return siteKey;
     }
 
-    static string captchaRequest(string myAPI, string siteKey, string currentUrl, IWebDriver driver)
+    /*static string captchaRequest(string myAPI, string siteKey, string currentUrl, IWebDriver driver)
     {
 
         // Solve the CAPTCHA
@@ -213,7 +218,7 @@ internal class Program
         var response = service.SolveReCaptchaV2(siteKey, currentUrl).Result;
         string code = response.Response;
         return code;
-    }
+    }*/
 
     static void solveCaptcha(IWebDriver driver, string code)
     {
@@ -381,17 +386,20 @@ internal class Program
         using (HttpClient client = new HttpClient())
         {
             // Set a timeout to avoid indefinite hanging
-            client.Timeout = TimeSpan.FromSeconds(30);
+            client.Timeout = TimeSpan.FromSeconds(10);
 
             // Construct the request URL
             string requestUrl = $"https://2captcha.com/in.php?key={apiKey}&method=userrecaptcha&googlekey={siteKey}&pageurl={pageUrl}";
 
-            try
-            {
+            Console.WriteLine($"Request URL: {requestUrl}");
+
+           // try
+        //    {
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
                 Console.WriteLine("Sending request to 2Captcha...");
 
                 // Send the GET request to 2Captcha
-                HttpResponseMessage response = await client.GetAsync(requestUrl);
+                HttpResponseMessage response =  client.Send(request);
 
                 Console.WriteLine("Response received.");
 
@@ -410,23 +418,28 @@ internal class Program
                 }
                 else
                 {
-                    throw new Exception($"Error submitting captcha: {result}");
+                Console.WriteLine($"Error submitting captcha: {result}");
+                throw new Exception($"Error submitting captcha: {result}");
                 }
-            }
-            catch (TaskCanceledException ex)
-            {
-                throw new Exception("Request timed out.", ex);
-            }
-            catch (HttpRequestException ex)
-            {
-                throw new Exception("Error sending request to 2Captcha.", ex);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("An unexpected error occurred.", ex);
-            }
+          //  }
+          //  catch (TaskCanceledException ex)
+          //  {
+            //    Console.WriteLine("Request timed out.");
+        //        throw new Exception("Request timed out.", ex);
+         ////   }
+         //   catch (HttpRequestException ex)
+         //   {
+        //        Console.WriteLine($"Error sending request to 2Captcha: {ex.Message}");
+        //       throw new Exception("Error sending request to 2Captcha.", ex);
+         //   }
+         //   catch (Exception ex)
+         ///   {
+         //      Console.WriteLine($"An unexpected error occurred: {ex.Message}");
+         /////       throw new Exception("An unexpected error occurred.", ex);
+         //   }
         }
     }
+
 
     // Retrieve captcha solution from 2Captcha
     private static async Task<string> RetrieveCaptchaSolution(string apiKey, string captchaId)
@@ -438,8 +451,9 @@ internal class Program
 
             do
             {
-                await Task.Delay(15000); // Wait 15 seconds
-                HttpResponseMessage response = await client.GetAsync(requestUrl);
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+                Task.Delay(15000); // Wait 15 seconds
+                HttpResponseMessage response =  client.Send(request);
                 result = await response.Content.ReadAsStringAsync();
             }
             while (result == "CAPCHA_NOT_READY");
@@ -450,7 +464,8 @@ internal class Program
             }
             else
             {
-                throw new Exception($"Error retrieving captcha solution: {result}");
+                Console.WriteLine($"Error submitting captcha: {result}");
+                throw new Exception($"Error submitting captcha: {result}");
             }
         }
     }
