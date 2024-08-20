@@ -8,6 +8,10 @@ using System;
 using System.Reflection;
 using System.Web;
 using _2CaptchaAPI;
+using Newtonsoft.Json.Linq;
+using CapSolver.Models.Responses;
+using CapSolver.Tasks;
+using CapSolver;
 
 
 internal class Program
@@ -20,8 +24,8 @@ internal class Program
 
         string filePath = "emails.txt";
         CreateFileIfNotExists(filePath);
-        Console.WriteLine(" Entre your 2Captcha API: ");
-        myAPI = Console.ReadLine();
+       // Console.WriteLine(" Entre your 2Captcha API: ");
+        myAPI = "CAP-393CFC36AD70D8F0EC4105660AD1EC00";
 
 
         IWebDriver driver = InitializeWebDriver();
@@ -42,7 +46,7 @@ internal class Program
         options.Proxy = proxy;  
 
 
-        IWebDriver driver = new FirefoxDriver(options);
+        IWebDriver driver = new FirefoxDriver();
         driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
 
        // try
@@ -181,17 +185,17 @@ internal class Program
         string currentUrl = driver.Url;
 
         //send captcha request 
-        string captchaId = await SubmitCaptchaTo2Captcha(myAPI, captchaKey, currentUrl);
-        string captchaToken = await RetrieveCaptchaSolution(myAPI, captchaId);
+        //==========================================================================================================================================================================
+
+        var captchaResponse = await SolveCaptcha(captchaKey, currentUrl,myAPI);
+        await Console.Out.WriteLineAsync(captchaResponse);
 
 
-        if (!isCaptchaReturnError(captchaToken, driver))
-        {
-            Console.WriteLine($"Successfully solved the CAPTCHA");
-        }
 
-        // Set the solved CAPTCHA in the textarea
-        solveCaptcha(driver, captchaToken);
+
+        //==========================================================================================================================================================================
+
+
     }
 
 
@@ -380,95 +384,29 @@ internal class Program
         }
     }
 
-    // Submit captcha to 2Captcha
-    private static async Task<string> SubmitCaptchaTo2Captcha(string apiKey, string siteKey, string pageUrl)
+
+    static async Task<string> SolveCaptcha(string siteKey, string pageUrl, string apikey)
     {
-        using (HttpClient client = new HttpClient())
+        var client = new HttpClient();
+        var content = new StringContent($"{{clientKey: {apikey},task: {{type:RecaptchaV2TaskProxyless, websiteURL: {pageUrl}, websiteKey: {siteKey}}}}}", System.Text.Encoding.UTF8, "application/json");
+        var response = await client.PostAsync("https://api.capsolver.com/createTask", content);
+        var jsonResponse = await response.Content.ReadAsStringAsync();
+        var taskId = JObject.Parse(jsonResponse)["taskId"].ToString();
+
+        string captchaSolution = "";
+        while (captchaSolution == "" || captchaSolution.Contains("processing"))
         {
-            // Set a timeout to avoid indefinite hanging
-            client.Timeout = TimeSpan.FromSeconds(10);
-
-            // Construct the request URL
-            string requestUrl = $"https://2captcha.com/in.php?key={apiKey}&method=userrecaptcha&googlekey={siteKey}&pageurl={pageUrl}";
-
-            Console.WriteLine($"Request URL: {requestUrl}");
-
-           // try
-        //    {
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-                Console.WriteLine("Sending request to 2Captcha...");
-
-                // Send the GET request to 2Captcha
-                HttpResponseMessage response =  client.Send(request);
-
-                Console.WriteLine("Response received.");
-
-                // Ensure the response was successful
-                response.EnsureSuccessStatusCode();
-
-                // Read the response content
-                string result = await response.Content.ReadAsStringAsync();
-
-                Console.WriteLine($"Response: {result}");
-
-                // Check if the response starts with "OK|"
-                if (result.StartsWith("OK|"))
-                {
-                    return result.Substring(3); // Return the captcha ID
-                }
-                else
-                {
-                Console.WriteLine($"Error submitting captcha: {result}");
-                throw new Exception($"Error submitting captcha: {result}");
-                }
-          //  }
-          //  catch (TaskCanceledException ex)
-          //  {
-            //    Console.WriteLine("Request timed out.");
-        //        throw new Exception("Request timed out.", ex);
-         ////   }
-         //   catch (HttpRequestException ex)
-         //   {
-        //        Console.WriteLine($"Error sending request to 2Captcha: {ex.Message}");
-        //       throw new Exception("Error sending request to 2Captcha.", ex);
-         //   }
-         //   catch (Exception ex)
-         ///   {
-         //      Console.WriteLine($"An unexpected error occurred: {ex.Message}");
-         /////       throw new Exception("An unexpected error occurred.", ex);
-         //   }
+            await Task.Delay(5000);
+            var content2 = new StringContent($"{{clientKey:{apikey},taskId:{taskId}}}", System.Text.Encoding.UTF8, "application/json");
+            var response2 = await client.PostAsync("https://api.capsolver.com/getTaskResult", content2);
+            var jsonResponse3 = await response2.Content.ReadAsStringAsync();
+            captchaSolution = JObject.Parse(jsonResponse3)["solution"]["gRecaptchaResponse"].ToString();
         }
+
+        return captchaSolution;
     }
 
 
-    // Retrieve captcha solution from 2Captcha
-    private static async Task<string> RetrieveCaptchaSolution(string apiKey, string captchaId)
-    {
-        using (HttpClient client = new HttpClient())
-        {
-            string requestUrl = $"https://2captcha.com/res.php?key={apiKey}&action=get&id={captchaId}";
-            string result;
-
-            do
-            {
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-                Task.Delay(15000); // Wait 15 seconds
-                HttpResponseMessage response =  client.Send(request);
-                result = await response.Content.ReadAsStringAsync();
-            }
-            while (result == "CAPCHA_NOT_READY");
-
-            if (result.StartsWith("OK|"))
-            {
-                return result.Substring(3); // Return the captcha token
-            }
-            else
-            {
-                Console.WriteLine($"Error submitting captcha: {result}");
-                throw new Exception($"Error submitting captcha: {result}");
-            }
-        }
-    }
 
 
 
