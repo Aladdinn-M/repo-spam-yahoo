@@ -12,6 +12,7 @@ using Newtonsoft.Json.Linq;
 using CapSolver.Models.Responses;
 using CapSolver.Tasks;
 using CapSolver;
+using RestSharp;
 
 
 internal class Program
@@ -187,8 +188,8 @@ internal class Program
         //send captcha request 
         //==========================================================================================================================================================================
 
-        var captchaResponse = await SolveCaptcha(captchaKey, currentUrl,myAPI);
-        await Console.Out.WriteLineAsync(captchaResponse);
+        var captchaResponse =  SolveCaptcha(captchaKey, currentUrl,myAPI);
+        Console.Out.WriteLine(captchaResponse);
 
 
 
@@ -388,23 +389,65 @@ internal class Program
     static async Task<string> SolveCaptcha(string siteKey, string pageUrl, string apikey)
     {
         var client = new HttpClient();
-        var content = new StringContent($"{{clientKey: {apikey},task: {{type:RecaptchaV2TaskProxyless, websiteURL: {pageUrl}, websiteKey: {siteKey}}}}}", System.Text.Encoding.UTF8, "application/json");
-        var response = await client.PostAsync("https://api.capsolver.com/createTask", content);
+
+        // Prepare the content for the POST request
+        var content = new StringContent($"{{\"clientKey\": \"{apikey}\",\"task\": {{\"type\":\"RecaptchaV2TaskProxyless\", \"websiteURL\": \"{pageUrl}\", \"websiteKey\": \"{siteKey}\"}}}}", System.Text.Encoding.UTF8, "application/json");
+
+        // Create the HttpRequestMessage
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.capsolver.com/createTask")
+        {
+            Content = content
+        };
+
+        // Send the request using Send
+        var response = client.Send(request);
+
+        // Read and parse the response
         var jsonResponse = await response.Content.ReadAsStringAsync();
-        var taskId = JObject.Parse(jsonResponse)["taskId"].ToString();
+        string taskId = JObject.Parse(jsonResponse)["taskId"].ToString();
+
 
         string captchaSolution = "";
         while (captchaSolution == "" || captchaSolution.Contains("processing"))
         {
-            await Task.Delay(5000);
-            var content2 = new StringContent($"{{clientKey:{apikey},taskId:{taskId}}}", System.Text.Encoding.UTF8, "application/json");
-            var response2 = await client.PostAsync("https://api.capsolver.com/getTaskResult", content2);
-            var jsonResponse3 = await response2.Content.ReadAsStringAsync();
-            captchaSolution = JObject.Parse(jsonResponse3)["solution"]["gRecaptchaResponse"].ToString();
+            var client2 = new HttpClient();
+
+            // Prepare the content for the POST request
+            var content2 = new StringContent($"{{\"clientKey\":\"hgh\",\"task\":\"{taskId}\"}}",System.Text.Encoding.UTF8, "application/json");
+
+            // Create the HttpRequestMessage
+            var request2 = new HttpRequestMessage(HttpMethod.Post, "https://api.capsolver.com/getTaskResult")
+            {
+                Content = content2
+            };
+
+            // Send the request using Send
+            var response2 = client2.Send(request2);
+
+            // Read and parse the response
+            var jsonResponse2 = await response2.Content.ReadAsStringAsync();
+            try 
+            {
+                captchaSolution = JObject.Parse(jsonResponse2)["solution"]["gRecaptchaResponse"].ToString(); 
+            }
+            catch 
+            {
+                Console.WriteLine(jsonResponse2);
+            
+            
+            
+            }
+
+            
+
         }
 
         return captchaSolution;
     }
+    
+
+
+
 
 
 
