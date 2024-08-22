@@ -183,12 +183,13 @@ internal class Program
         string captchaKey = extractCaptchaKey(driver);
 
         // get url 
-        string currentUrl = driver.Url;
+
+        string captchaUrl = extractCaptchaURL(driver);
 
         //send captcha request 
         //==========================================================================================================================================================================
 
-        var captchaResponse =  SolveCaptcha(captchaKey, currentUrl,myAPI);
+        var captchaResponse =  SolveCaptcha(captchaKey, captchaUrl, myAPI);
         Console.Out.WriteLine(captchaResponse);
 
 
@@ -198,7 +199,13 @@ internal class Program
 
 
     }
-
+    private static string extractCaptchaURL(IWebDriver driver)
+    {
+        driver.SwitchTo().Frame("recaptcha-iframe");
+        IWebElement recaptchaElement = driver.FindElement(By.TagName("iframe"));
+        string URL = recaptchaElement.GetAttribute("src");
+        return URL;
+    }
 
     static string extractCaptchaKey(IWebDriver driver)
     {
@@ -386,12 +393,16 @@ internal class Program
     }
 
 
-    static async Task<string> SolveCaptcha(string siteKey, string pageUrl, string apikey)
+    static async Task<string> SolveCaptcha(string siteKey, string captchaUrl, string apikey)
     {
         var client = new HttpClient();
 
         // Prepare the content for the POST request
-        var content = new StringContent($"{{\"clientKey\": \"{apikey}\",\"task\": {{\"type\":\"RecaptchaV2TaskProxyless\", \"websiteURL\": \"{pageUrl}\", \"websiteKey\": \"{siteKey}\"}}}}", System.Text.Encoding.UTF8, "application/json");
+        var content = new StringContent(
+     $"{{\"clientKey\": \"{apikey}\",\"task\": {{\"type\":\"ReCaptchaV2TaskProxyLess\", \"websiteURL\": \"{captchaUrl}\", \"websiteKey\": \"{siteKey}\", \"pageAction\": \"login\"}}}}",
+     System.Text.Encoding.UTF8,
+     "application/json"
+ );
 
         // Create the HttpRequestMessage
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.capsolver.com/createTask")
@@ -413,7 +424,7 @@ internal class Program
             var client2 = new HttpClient();
 
             // Prepare the content for the POST request
-            var content2 = new StringContent($"{{\"clientKey\":\"hgh\",\"task\":\"{taskId}\"}}",System.Text.Encoding.UTF8, "application/json");
+            var content2 = new StringContent($"{{\"clientKey\":\"{apikey}\",\"task\":\"{taskId}\"}}",System.Text.Encoding.UTF8, "application/json");
 
             // Create the HttpRequestMessage
             var request2 = new HttpRequestMessage(HttpMethod.Post, "https://api.capsolver.com/getTaskResult")
