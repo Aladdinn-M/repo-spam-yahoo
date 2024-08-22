@@ -13,6 +13,9 @@ using CapSolver.Models.Responses;
 using CapSolver.Tasks;
 using CapSolver;
 using RestSharp;
+using Newtonsoft.Json;
+using System.Text;
+using Newtonsoft.Json.Schema;
 
 
 internal class Program
@@ -30,7 +33,7 @@ internal class Program
 
 
         IWebDriver driver = InitializeWebDriver();
-        fillLoginFields(driver, 1, filePath);
+        fillLoginFields(driver, 0, filePath);
 
 
 
@@ -47,7 +50,7 @@ internal class Program
         options.Proxy = proxy;  
 
 
-        IWebDriver driver = new FirefoxDriver();
+        IWebDriver driver = new FirefoxDriver(options);
         driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
 
        // try
@@ -126,7 +129,7 @@ internal class Program
 
              // Output the sitekey
 
-            IWebElement passInput = driver.FindElement(By.CssSelector(""));
+            IWebElement passInput = driver.FindElement(By.Id("login-passwd"));
             string password = extractfile(1, index, emailFilePath, driver);
             passInput.SendKeys(password);
             passInput.SendKeys(Keys.Enter);
@@ -189,16 +192,22 @@ internal class Program
         //send captcha request 
         //==========================================================================================================================================================================
 
-        var captchaResponse =  SolveCaptcha(captchaKey, captchaUrl, myAPI);
-        Console.Out.WriteLine(captchaResponse);
+        var token =  tokenRequest(captchaKey, captchaUrl, myAPI);
+       
+        solveCaptcha(driver, token.Result);
+
+        var submitButton = driver.FindElement(By.Id("recaptcha-submit"));
+        IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
+        js.ExecuteScript("arguments[0].removeAttribute('disabled');", submitButton);
 
 
+        submitButton.Click();
 
 
         //==========================================================================================================================================================================
 
 
-    }
+        }
     private static string extractCaptchaURL(IWebDriver driver)
     {
         driver.SwitchTo().Frame("recaptcha-iframe");
@@ -231,16 +240,6 @@ internal class Program
         string code = response.Response;
         return code;
     }*/
-
-    static void solveCaptcha(IWebDriver driver, string code)
-    {
-        IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
-        IWebElement recaptchaResponseElement = driver.FindElement(By.Id("g-recaptcha-response"));
-        js.ExecuteScript("arguments[0].removeAttribute('style');", recaptchaResponseElement);
-        js.ExecuteScript($"arguments[0].value = '{code}';", recaptchaResponseElement);
-    }
-
-
 
     static bool isCaptchaReturnError(string code, IWebDriver driver)
     {
@@ -393,16 +392,28 @@ internal class Program
     }
 
 
-    static async Task<string> SolveCaptcha(string siteKey, string captchaUrl, string apikey)
+    static async Task<string> tokenRequest(string siteKey, string captchaUrl, string apikey)
     {
         var client = new HttpClient();
 
-        // Prepare the content for the POST request
-        var content = new StringContent(
-     $"{{\"clientKey\": \"{apikey}\",\"task\": {{\"type\":\"ReCaptchaV2TaskProxyLess\", \"websiteURL\": \"{captchaUrl}\", \"websiteKey\": \"{siteKey}\", \"pageAction\": \"login\"}}}}",
-     System.Text.Encoding.UTF8,
-     "application/json"
- );
+        // Create an object representing the task
+        var taskData = new
+        {
+            clientKey = apikey,
+            task = new
+            {
+                type = "ReCaptchaV2TaskProxyLess",
+                websiteURL = captchaUrl,
+                websiteKey = siteKey,
+                pageAction = "login"
+            }
+        };
+
+        // Serialize the object to JSON
+        var jsonContent = JsonConvert.SerializeObject(taskData);
+
+        // Prepare the content for the POST request as JSON
+        var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
         // Create the HttpRequestMessage
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.capsolver.com/createTask")
@@ -421,10 +432,20 @@ internal class Program
         string captchaSolution = "";
         while (captchaSolution == "" || captchaSolution.Contains("processing"))
         {
+            await Task.Delay(20000);
             var client2 = new HttpClient();
 
-            // Prepare the content for the POST request
-            var content2 = new StringContent($"{{\"clientKey\":\"{apikey}\",\"task\":\"{taskId}\"}}",System.Text.Encoding.UTF8, "application/json");
+            var requestData = new
+            {
+                clientKey = apikey,
+                taskId = taskId
+            };
+
+            // Serialize the object to JSON
+            var jsonContent2 = JsonConvert.SerializeObject(requestData);
+
+            // Prepare the content for the POST request as JSON
+            var content2 = new StringContent(jsonContent2, Encoding.UTF8, "application/json");
 
             // Create the HttpRequestMessage
             var request2 = new HttpRequestMessage(HttpMethod.Post, "https://api.capsolver.com/getTaskResult")
@@ -437,25 +458,26 @@ internal class Program
 
             // Read and parse the response
             var jsonResponse2 = await response2.Content.ReadAsStringAsync();
-            try 
-            {
+           
+                if (JObject.Parse(jsonResponse2)["solution"]!= null)
                 captchaSolution = JObject.Parse(jsonResponse2)["solution"]["gRecaptchaResponse"].ToString(); 
-            }
-            catch 
-            {
                 Console.WriteLine(jsonResponse2);
             
-            
-            
-            }
-
-            
-
         }
-
+        Console.Out.WriteLine("token is ready......!");
         return captchaSolution;
     }
-    
+
+
+
+
+    static void solveCaptcha(IWebDriver driver, string token)
+    {
+        IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
+        IWebElement recaptchaResponseElement = driver.FindElement(By.Id("g-recaptcha-response"));
+        js.ExecuteScript("arguments[0].removeAttribute('style');", recaptchaResponseElement);
+        js.ExecuteScript($"arguments[0].value = '{token}';", recaptchaResponseElement);
+    }
 
 
 
