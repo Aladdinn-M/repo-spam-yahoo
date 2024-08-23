@@ -1,22 +1,12 @@
 ﻿using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium;
-using System.Diagnostics;
-using OpenQA.Selenium.Interactions;
-using OpenQA.Selenium.Edge;
 using OpenQA.Selenium.Firefox;
 using System;
 using System.Reflection;
 using System.Web;
-using _2CaptchaAPI;
 using Newtonsoft.Json.Linq;
-using CapSolver.Models.Responses;
-using CapSolver.Tasks;
-using CapSolver;
-using RestSharp;
 using Newtonsoft.Json;
 using System.Text;
-using Newtonsoft.Json.Schema;
-
 
 internal class Program
 {
@@ -50,7 +40,7 @@ internal class Program
         options.Proxy = proxy;  
 
 
-        IWebDriver driver = new FirefoxDriver(options);
+        IWebDriver driver = new FirefoxDriver();
         driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
 
        // try
@@ -121,7 +111,7 @@ internal class Program
             loginInput.SendKeys(email);
             loginInput.SendKeys(Keys.Enter);
 
-            Console.WriteLine("captcha...........................!");
+            Console.WriteLine("captcha...............!");
 
 
                 passeTheCaptcha(driver, 1, emailFilePath);
@@ -229,17 +219,6 @@ internal class Program
 
         return siteKey;
     }
-
-    /*static string captchaRequest(string myAPI, string siteKey, string currentUrl, IWebDriver driver)
-    {
-
-        // Solve the CAPTCHA
-        Console.WriteLine("Solving CAPTCHA........");
-        var service = new _2CaptchaAPI._2Captcha(myAPI);
-        var response = service.SolveReCaptchaV2(siteKey, currentUrl).Result;
-        string code = response.Response;
-        return code;
-    }*/
 
     static bool isCaptchaReturnError(string code, IWebDriver driver)
     {
@@ -427,7 +406,7 @@ internal class Program
         // Read and parse the response
         var jsonResponse = await response.Content.ReadAsStringAsync();
         string taskId = JObject.Parse(jsonResponse)["taskId"].ToString();
-
+        Console.WriteLine($"request sent .......!");
 
         string captchaSolution = "";
         while (captchaSolution == "" || captchaSolution.Contains("processing"))
@@ -460,8 +439,11 @@ internal class Program
             var jsonResponse2 = await response2.Content.ReadAsStringAsync();
            
                 if (JObject.Parse(jsonResponse2)["solution"]!= null)
-                captchaSolution = JObject.Parse(jsonResponse2)["solution"]["gRecaptchaResponse"].ToString(); 
-                Console.WriteLine(jsonResponse2);
+            {
+                captchaSolution = JObject.Parse(jsonResponse2)["solution"]["gRecaptchaResponse"].ToString();
+                Console.WriteLine($"response received......!");
+            }
+            Console.WriteLine(jsonResponse2);
             
         }
         Console.Out.WriteLine("token is ready......!");
