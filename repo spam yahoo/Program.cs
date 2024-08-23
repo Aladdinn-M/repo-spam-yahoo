@@ -14,8 +14,6 @@ internal class Program
     private static void Main(string[] args)
     {
         
-
-
         string filePath = "emails.txt";
         CreateFileIfNotExists(filePath);
        // Console.WriteLine(" Entre your 2Captcha API: ");
@@ -24,9 +22,6 @@ internal class Program
 
         IWebDriver driver = InitializeWebDriver();
         fillLoginFields(driver, 0, filePath);
-
-
-
 
     }
 
@@ -43,16 +38,16 @@ internal class Program
         IWebDriver driver = new FirefoxDriver();
         driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
 
-       // try
-       // {
+       try
+       {
             string url = "https://mail.yahoo.com/d/folders/1";
             driver.Manage().Window.Maximize();
             driver.Navigate().GoToUrl(url);
-       // }
-      //  catch (Exception)
-       // {
-      //      Console.WriteLine("--------------error in openning browser!!");
-      //  }
+        }
+       catch (Exception)
+       {
+            Console.WriteLine("--------------error in openning browser!!");
+       }
 
         return driver;
     }
@@ -411,7 +406,7 @@ internal class Program
         string captchaSolution = "";
         while (captchaSolution == "" || captchaSolution.Contains("processing"))
         {
-            await Task.Delay(20000);
+            await Task.Delay(12000);
             var client2 = new HttpClient();
 
             var requestData = new
