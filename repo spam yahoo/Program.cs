@@ -1,12 +1,15 @@
 ﻿using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Firefox;
+using OpenQA.Selenium.Support.UI;
 using System;
 using System.Reflection;
 using System.Web;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using System.Text;
+using SeleniumExtras.WaitHelpers;
+using System.Diagnostics;
 
 internal class Program
 {
@@ -21,7 +24,7 @@ internal class Program
 
 
         IWebDriver driver = InitializeWebDriver();
-        fillLoginFields(driver, 0, filePath);
+        fillLoginFields(driver, 1, filePath);
 
     }
 
@@ -29,13 +32,34 @@ internal class Program
 
     private static IWebDriver InitializeWebDriver()
     {
+        // Proxy settings
+        string proxyHost = "geo.iproyal.com";
+        int proxyPort = 12321;
+        string proxyUsername = "ATG52MODUSBvGm9H";
+        string proxyPassword = "CEphkjAGxDjzgfbW_country-us";
+
+        // Set Firefox options
         FirefoxOptions options = new FirefoxOptions();
-        Proxy proxy = new Proxy();
-        proxy.HttpProxy = "45.43.71.235:6833";
-        options.Proxy = proxy;  
 
+        // Set up proxy
+        FirefoxProfile profile = new FirefoxProfile();
+        profile.SetPreference("network.proxy.type", 1);
+        profile.SetPreference("network.proxy.http", proxyHost);
+        profile.SetPreference("network.proxy.http_port", proxyPort);
+        profile.SetPreference("network.proxy.ssl", proxyHost);
+        profile.SetPreference("network.proxy.ssl_port", proxyPort);
 
-        IWebDriver driver = new FirefoxDriver();
+        // Bypass proxy authentication
+        profile.SetPreference("network.proxy.autoconfig_url", $"data:text/plain,{proxyHost}:{proxyPort}");
+        profile.SetPreference("signon.autologin.proxy", true);
+        options.Profile = profile;
+
+        // Set user agent
+        options.AddArgument("--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A");
+
+        IWebDriver driver = new FirefoxDriver(options);
+        string autoITScriptPath = @"login_pass_geoiproyalcom_12321.exe";
+        Process.Start(autoITScriptPath);
         driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
 
        try
@@ -43,6 +67,7 @@ internal class Program
             string url = "https://mail.yahoo.com/d/folders/1";
             driver.Manage().Window.Maximize();
             driver.Navigate().GoToUrl(url);
+            
         }
        catch (Exception)
        {
@@ -99,17 +124,17 @@ internal class Program
         try
         {
 
-
+            Thread.Sleep(2000);
             string email = extractfile(0, index, emailFilePath, driver);
             IWebElement loginInput = driver.FindElement(By.Id("login-username-form"));
             loginInput = driver.FindElement(By.Name("username"));
             loginInput.SendKeys(email);
             loginInput.SendKeys(Keys.Enter);
 
-            Console.WriteLine("captcha...............!");
+           // Console.WriteLine("captcha...............!");
 
 
-                passeTheCaptcha(driver, 1, emailFilePath);
+                //passeTheCaptcha(driver, 1, emailFilePath);
 
 
              // Output the sitekey
