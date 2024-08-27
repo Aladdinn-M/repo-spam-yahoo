@@ -10,65 +10,211 @@ using Newtonsoft.Json;
 using System.Text;
 using SeleniumExtras.WaitHelpers;
 using System.Diagnostics;
+using System.Collections.Generic;
+
 
 internal class Program
 {
-    static string myAPI;
+    private static Random random = new Random();
+    static string emailFileName = "emails.txt";
+    
     private static void Main(string[] args)
     {
+
+
+
+        DisplayLogo();
+        CreateFileIfNotExists(emailFileName);
+        FirstChoices();
+
+
+
+
         
-        string filePath = "emails.txt";
-        CreateFileIfNotExists(filePath);
-       // Console.WriteLine(" Entre your 2Captcha API: ");
-        myAPI = "CAP-393CFC36AD70D8F0EC4105660AD1EC00";
 
 
-        IWebDriver driver = InitializeWebDriver();
-        fillLoginFields(driver, 1, filePath);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     }
 
 
+
+    private static void FirstChoices( )
+    {
+        string choice;
+       
+            Console.WriteLine("Choose an option:");
+            Console.WriteLine("1. Save a new profile");
+            Console.WriteLine("2. Open an existing profile"); 
+            do
+            {
+
+                choice = Console.ReadLine();
+
+                switch (choice)
+                {
+                    case "1":
+                        SaveNewProfile();
+                        break;
+                    case "2":
+                        OpenExistingProfile();
+                        break;
+                    default:
+                        Console.WriteLine("Invalid choice.");
+                        break;
+                }
+        } while (choice !="1" && choice!="2");
+           
+        
+    }
+
+    public static void SaveNewProfile()
+    {
+        string appDirectory = AppDomain.CurrentDomain.BaseDirectory;
+        string profilesDirectory = Path.Combine(appDirectory, "ChromeProfiles");
+
+        // Create the profiles directory if it doesn't exist
+        if (!Directory.Exists(profilesDirectory))
+        {
+            Directory.CreateDirectory(profilesDirectory);
+        }
+
+        // Determine the next available profile number
+        int profileNumber = 1;
+        while (Directory.Exists(Path.Combine(profilesDirectory, profileNumber.ToString())))
+        {
+            profileNumber++;
+        }
+
+        string profilePath = Path.Combine(profilesDirectory, profileNumber.ToString());
+
+        // Proxy settings
+        string proxyHost = "geo.iproyal.com";
+        int proxyPort = 12321;
+
+        // Set Chrome options
+        ChromeOptions options = new ChromeOptions();
+        options.AddArguments($"--proxy-server=http://{proxyHost}:{proxyPort}");
+        string userAgent = GetRandomUserAgent();
+        options.AddArgument($"--user-agent={userAgent}");
+        options.AddArgument($"--user-data-dir={profilePath}");
+        // Initialize the ChromeDriver with the specified options
+        IWebDriver driver = new ChromeDriver(options);
+
+        // Perform necessary tasks here (e.g., navigating to a website, logging in, etc.)
+        string url = "https://mail.yahoo.com/d/folders/6";
+        driver.Manage().Window.Maximize();
+        driver.Navigate().GoToUrl(url);
+        string autoITScriptPath = @"login_pass_geoiproyalcom_12321.exe";
+        Process.Start(autoITScriptPath);
+        Thread.Sleep(3000);
+        string filepath = filePath(emailFileName);
+
+        fillLoginFields(driver,1, filepath);
+
+
+      
+
+        Console.WriteLine($"Profile '{profileNumber}' has been saved.");
+    }
+
+
+
+
+    public static void OpenExistingProfile()
+    {
+        string appDirectory = AppDomain.CurrentDomain.BaseDirectory;
+        string profilesDirectory = Path.Combine(appDirectory, "ChromeProfiles");
+
+        if (!Directory.Exists(profilesDirectory))
+        {
+            Console.WriteLine("No profiles directory found.");
+            return;
+        }
+
+        // List available profiles
+        string[] profiles = Directory.GetDirectories(profilesDirectory);
+        if (profiles.Length == 0)
+        {
+            Console.WriteLine("No profiles found.");
+            return;
+        }
+
+        Console.WriteLine("Available Profiles:");
+        for (int i = 0; i < profiles.Length; i++)
+        {
+            Console.WriteLine($"{i + 1}: {Path.GetFileName(profiles[i])}");
+        }
+
+        Console.Write("Select a profile by number: ");
+        string input = Console.ReadLine();
+        if (int.TryParse(input, out int profileIndex) && profileIndex > 0 && profileIndex <= profiles.Length)
+        {
+            string selectedProfilePath = profiles[profileIndex - 1];
+
+            // Initialize ChromeDriver with the selected profile
+            ChromeOptions options = new ChromeOptions();
+            options.AddArgument($"--user-data-dir={selectedProfilePath}");
+
+            IWebDriver driver = new ChromeDriver(options);
+
+            string url = "https://mail.yahoo.com/d/folders/6";
+            driver.Manage().Window.Maximize();
+            driver.Navigate().GoToUrl(url);
+
+            // Close the driver after completing tasks
+            
+
+            Console.WriteLine($"Profile '{Path.GetFileName(selectedProfilePath)}' has been opened.");
+        }
+        else
+        {
+            Console.WriteLine("Invalid selection.");
+        }
+    }
 
     private static IWebDriver InitializeWebDriver()
     {
         // Proxy settings
         string proxyHost = "geo.iproyal.com";
         int proxyPort = 12321;
-        string proxyUsername = "ATG52MODUSBvGm9H";
-        string proxyPassword = "CEphkjAGxDjzgfbW_country-us";
-
-        // Set Firefox options
-        FirefoxOptions options = new FirefoxOptions();
-
-        // Set up proxy
-        FirefoxProfile profile = new FirefoxProfile();
-        profile.SetPreference("network.proxy.type", 1);
-        profile.SetPreference("network.proxy.http", proxyHost);
-        profile.SetPreference("network.proxy.http_port", proxyPort);
-        profile.SetPreference("network.proxy.ssl", proxyHost);
-        profile.SetPreference("network.proxy.ssl_port", proxyPort);
-
-        // Bypass proxy authentication
-        profile.SetPreference("network.proxy.autoconfig_url", $"data:text/plain,{proxyHost}:{proxyPort}");
-        profile.SetPreference("signon.autologin.proxy", true);
-        options.Profile = profile;
-
+        // Set Chrome options
+        ChromeOptions options = new ChromeOptions();
+        options.AddArguments($"--proxy-server=http://{proxyHost}:{proxyPort}");
         // Set user agent
         options.AddArgument("--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A");
 
-        IWebDriver driver = new FirefoxDriver(options);
-        string autoITScriptPath = @"login_pass_geoiproyalcom_12321.exe";
-        Process.Start(autoITScriptPath);
+        IWebDriver driver = new ChromeDriver(options);
         driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
 
        try
        {
-            string url = "https://mail.yahoo.com/d/folders/1";
+            string url = "https://mail.yahoo.com/d/folders/6";
             driver.Manage().Window.Maximize();
             driver.Navigate().GoToUrl(url);
-            
-        }
+            string autoITScriptPath = @"login_pass_geoiproyalcom_12321.exe";
+            Process.Start(autoITScriptPath);
+
+       }
        catch (Exception)
        {
             Console.WriteLine("--------------error in openning browser!!");
@@ -92,7 +238,67 @@ internal class Program
         return filePath;
 
     }
+    public static string GetRandomUserAgent()
+    {
+        // Dictionary or List of User Agents
+        List<string> userAgents = new List<string>
+        {
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.77.4 (KHTML, like Gecko) Version/7.0.3 Safari/537.77.4" ,
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.1 Safari/537.75.14" ,
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.51.1 (KHTML, like Gecko) Version/7.0 Mobile/11A465 Safari/9537.53" ,
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.51.1 (KHTML, like Gecko) Version/7.0 Mobile/11B651 Safari/9537.53" ,
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.2 Safari/537.75.14" ,
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0 Safari/537.75.14" ,
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.51.1 (KHTML, like Gecko) Version/7.0 Mobile/11A465 Safari/9537.53" ,
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.77.4 (KHTML, like Gecko) Version/7.0.3 Safari/537.77.4" ,
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.51.1 (KHTML, like Gecko) Version/7.0 Mobile/11D167 Safari/9537.53" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_0) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0 Safari/537.75.14" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/537.75.14" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.51.1 (KHTML, like Gecko) Version/7.0 Mobile/11B554a Safari/9537.53" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.51.1 (KHTML, like Gecko) Version/7.0 Mobile/11D167 Safari/9537.53" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.1 Safari/537.75.14" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0 Safari/537.75.14" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.51.1 (KHTML, like Gecko) Version/7.0 Mobile/11B651 Safari/9537.53" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.1 Safari/537.75.14" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.51.1 (KHTML, like Gecko) Version/7.0 Mobile/11D201 Safari/9537.53" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.2 Safari/537.75.14" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_1) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0 Safari/537.75.14" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.51.1 (KHTML, like Gecko) Version/7.0 Mobile/11D201 Safari/9537.53" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0 Safari/537.75.14" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0 Safari/537.75.14" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.51.1 (KHTML, like Gecko) Version/7.0 Mobile/11B554a Safari/9537.53" ,
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/536.26.17 (KHTML, like Gecko) Version/6.0.2 Safari/536.26.17" ,
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10B350 Safari/8536.25" ,
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/536.26.17 (KHTML, like Gecko) Version/6.0.2 Safari/536.26.17" ,
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A403 Safari/8536.25" ,
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_1) AppleWebKit/536.25 (KHTML, like Gecko) Version/6.0 Safari/536.25" ,
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_4) AppleWebKit/536.26.17 (KHTML, like Gecko) Version/6.0.2 Safari/536.26.17" ,
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10B146 Safari/8536.25" ,
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_0) AppleWebKit/536.25 (KHTML, like Gecko) Version/6.0 Safari/536.25" ,
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10B329 Safari/8536.25" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/536.30.1 (KHTML, like Gecko) Version/6.0.5 Safari/536.30.1" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A523 Safari/8536.25" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) AppleWebKit/536.30.1 (KHTML, like Gecko) Version/6.0.5 Safari/536.30.1" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10B146 Safari/8536.25" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/536.28.10 (KHTML, like Gecko) Version/6.0.4 Safari/536.28.10" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/536.30.1 (KHTML, like Gecko) Version/6.0.5 Safari/536.30.1" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A551 Safari/8536.25" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) AppleWebKit/536.28.10 (KHTML, like Gecko) Version/6.0.4 Safari/536.28.10" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A523 Safari/8536.25" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/536.30.1 (KHTML, like Gecko) Version/6.0.5 Safari/536.30.1" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/536.28.10 (KHTML, like Gecko) Version/6.0.4 Safari/536.28.10" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10B144 Safari/8536.25" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A551 Safari/8536.25" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/536.28.10 (KHTML, like Gecko) Version/6.0.4 Safari/536.28.10" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10B329 Safari/8536.25" ,
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_4) AppleWebKit/536.30.1 (KHTML, like Gecko) Version/6.0.5 Safari/536.30.1" ,
+        };
 
+        // Randomly select a user agent
+        int index = random.Next(userAgents.Count);
+        return userAgents[index];
+    }
 
     private static void CreateFileIfNotExists(string filePath)
     {
@@ -123,26 +329,19 @@ internal class Program
     {
         try
         {
-
-            Thread.Sleep(2000);
+            
             string email = extractfile(0, index, emailFilePath, driver);
+            Thread.Sleep(3000);
             IWebElement loginInput = driver.FindElement(By.Id("login-username-form"));
             loginInput = driver.FindElement(By.Name("username"));
             loginInput.SendKeys(email);
             loginInput.SendKeys(Keys.Enter);
-
-           // Console.WriteLine("captcha...............!");
-
-
-                //passeTheCaptcha(driver, 1, emailFilePath);
-
-
-             // Output the sitekey
-
+            Thread.Sleep(3000);
             IWebElement passInput = driver.FindElement(By.Id("login-passwd"));
             string password = extractfile(1, index, emailFilePath, driver);
             passInput.SendKeys(password);
             passInput.SendKeys(Keys.Enter);
+
        }
         catch (Exception)
         {
@@ -200,7 +399,7 @@ internal class Program
         string captchaUrl = extractCaptchaURL(driver);
 
         //send captcha request 
-        //==========================================================================================================================================================================
+        /*==========================================================================================================================================================================
 
         var token =  tokenRequest(captchaKey, captchaUrl, myAPI);
        
@@ -214,8 +413,8 @@ internal class Program
         submitButton.Click();
 
 
-        //==========================================================================================================================================================================
-
+        ==========================================================================================================================================================================
+*/
 
         }
     private static string extractCaptchaURL(IWebDriver driver)
@@ -484,7 +683,19 @@ internal class Program
 
 
 
-
+    static void DisplayLogo()
+    {
+        string logo = @"
+  _____                    _       _                   _____  
+ |  __ \                  | |     | |                 |  __ \ 
+ | |  | |   ___    _   _  | |__   | |   ___   ______  | |  | |
+ | |  | |  / _ \  | | | | | '_ \  | |  / _ \ |______| | |  | |
+ | |__| | | (_) | | |_| | | |_) | | | |  __/          | |__| |
+ |_____/   \___/   \__,_| |_.__/  |_|  \___|          |_____/ 
+                                                              
+                                                              ";
+        Console.WriteLine(logo);
+    }
 
 
 
