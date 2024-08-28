@@ -25,12 +25,14 @@ internal class Program
 
         DisplayLogo();
         CreateFileIfNotExists(emailFileName);
-        FirstChoices();
-
-
-
-
+        string profilesDirectory = createProfilesDirectory();
+        FirstChoices(profilesDirectory);
         
+
+
+
+
+
 
 
 
@@ -57,8 +59,23 @@ internal class Program
     }
 
 
+    private static string createProfilesDirectory() 
+    {
+        string appDirectory = AppDomain.CurrentDomain.BaseDirectory;
+        string profilesDirectory = Path.Combine(appDirectory, "ChromeProfiles");
 
-    private static void FirstChoices( )
+        // Create the profiles directory if it doesn't exist
+        if (!Directory.Exists(profilesDirectory))
+        {
+            Console.WriteLine("No profiles directory found.");
+            Directory.CreateDirectory(profilesDirectory);
+        }
+
+      
+
+        return profilesDirectory;
+    }
+    private static void FirstChoices( string profilesDirectory)
     {
         string choice;
        
@@ -73,7 +90,7 @@ internal class Program
                 switch (choice)
                 {
                     case "1":
-                        SaveNewProfile();
+                        SaveNewProfile(profilesDirectory);
                         break;
                     case "2":
                         OpenExistingProfile();
@@ -87,54 +104,68 @@ internal class Program
         
     }
 
-    public static void SaveNewProfile()
+    public static void SaveNewProfile( string profilesDirectory)
     {
-        string appDirectory = AppDomain.CurrentDomain.BaseDirectory;
-        string profilesDirectory = Path.Combine(appDirectory, "ChromeProfiles");
-
-        // Create the profiles directory if it doesn't exist
-        if (!Directory.Exists(profilesDirectory))
-        {
-            Directory.CreateDirectory(profilesDirectory);
-        }
-
-        // Determine the next available profile number
         int profileNumber = 1;
-        while (Directory.Exists(Path.Combine(profilesDirectory, profileNumber.ToString())))
+        Console.Write("enter Number of profiles you want to add : ");
+
+
+        int NBofProfiles =int.Parse(Console.ReadLine());
+        for (int i = 0; i < NBofProfiles; i++)
         {
-            profileNumber++;
+            Console.WriteLine("............................"+NBofProfiles);
+            try
+            {
+                // Determine the next available profile number
+
+                while (Directory.Exists(Path.Combine(profilesDirectory, profileNumber.ToString())))
+                {
+                    profileNumber++;
+                }
+
+                string profilePath = Path.Combine(profilesDirectory, profileNumber.ToString());
+
+                // Proxy settings
+                string proxyHost = "geo.iproyal.com";
+                int proxyPort = 12321;
+
+
+
+                // Set Chrome options
+                ChromeOptions options = new ChromeOptions();
+                options.AddArguments($"--proxy-server=http://{proxyHost}:{proxyPort}");
+                string userAgent = GetRandomUserAgent();
+                options.AddArgument($"--user-agent={userAgent}");
+                options.AddArgument($"--user-data-dir={profilePath}");
+
+
+                // Initialize the ChromeDriver with the specified options
+                IWebDriver driver = new ChromeDriver(options);
+
+                // Perform necessary tasks here (e.g., navigating to a website, logging in, etc.)
+                string url = "https://mail.yahoo.com/d/folders/6";
+                driver.Manage().Window.Maximize();
+                driver.Navigate().GoToUrl(url);
+                string autoITScriptPath = @"login_pass_geoiproyalcom_12321.exe";
+                Process.Start(autoITScriptPath);
+                Thread.Sleep(3000);
+
+                //fill the login and password fields
+                string filepath = filePath(emailFileName);
+                fillLoginFields(driver,i, filepath);
+                Thread.Sleep(5000);
+
+                    driver.Close();
+                Console.WriteLine($"Profile '{profileNumber}' has been saved.");
+            }
+            catch (Exception)
+            { 
+                Console.WriteLine($"unexpacted error in the profile Number {profileNumber}");
+            }
         }
+       
 
-        string profilePath = Path.Combine(profilesDirectory, profileNumber.ToString());
-
-        // Proxy settings
-        string proxyHost = "geo.iproyal.com";
-        int proxyPort = 12321;
-
-        // Set Chrome options
-        ChromeOptions options = new ChromeOptions();
-        options.AddArguments($"--proxy-server=http://{proxyHost}:{proxyPort}");
-        string userAgent = GetRandomUserAgent();
-        options.AddArgument($"--user-agent={userAgent}");
-        options.AddArgument($"--user-data-dir={profilePath}");
-        // Initialize the ChromeDriver with the specified options
-        IWebDriver driver = new ChromeDriver(options);
-
-        // Perform necessary tasks here (e.g., navigating to a website, logging in, etc.)
-        string url = "https://mail.yahoo.com/d/folders/6";
-        driver.Manage().Window.Maximize();
-        driver.Navigate().GoToUrl(url);
-        string autoITScriptPath = @"login_pass_geoiproyalcom_12321.exe";
-        Process.Start(autoITScriptPath);
-        Thread.Sleep(3000);
-        string filepath = filePath(emailFileName);
-
-        fillLoginFields(driver,1, filepath);
-
-
-      
-
-        Console.WriteLine($"Profile '{profileNumber}' has been saved.");
+        
     }
 
 
@@ -145,11 +176,7 @@ internal class Program
         string appDirectory = AppDomain.CurrentDomain.BaseDirectory;
         string profilesDirectory = Path.Combine(appDirectory, "ChromeProfiles");
 
-        if (!Directory.Exists(profilesDirectory))
-        {
-            Console.WriteLine("No profiles directory found.");
-            return;
-        }
+       
 
         // List available profiles
         string[] profiles = Directory.GetDirectories(profilesDirectory);
@@ -180,11 +207,25 @@ internal class Program
             string url = "https://mail.yahoo.com/d/folders/6";
             driver.Manage().Window.Maximize();
             driver.Navigate().GoToUrl(url);
+            Console.WriteLine($"Profile '{Path.GetFileName(selectedProfilePath)}' has been opened.");
 
-            // Close the driver after completing tasks
+
+            //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+            do
+            {
+                IWebElement checkboxButton = driver.FindElement(By.CssSelector("button[data-test-id='icon-btn-checkbox']"));
+                checkboxButton.Click();
+                Thread.Sleep(2000);
+                IWebElement notSpamButton = driver.FindElement(By.CssSelector("button[data-test-id='toolbar-not-spam']"));
+                notSpamButton.Click();
+
+            } while (true);
             
 
-            Console.WriteLine($"Profile '{Path.GetFileName(selectedProfilePath)}' has been opened.");
+            //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
         }
         else
         {
