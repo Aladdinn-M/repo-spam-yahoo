@@ -30,6 +30,12 @@ internal class Program
         
 
 
+
+
+
+
+
+
     }
 
 
@@ -124,6 +130,7 @@ internal class Program
                 Thread.Sleep(3000);
 
                 //fill the login and password fields
+
                 string filepath = filePath(emailFileName);
                 fillLoginFields(driver,i, filepath);
                 Thread.Sleep(5000);
@@ -339,33 +346,24 @@ internal class Program
         }
     }
 
-    private static void fillLoginFields(IWebDriver driver, int index,string emailFilePath)
+    private static void fillLoginFields(IWebDriver driver, int index, string emailFilePath)
     {
-        try
-        {
-            
-            string email = extractfile(0, index, emailFilePath, driver);
-            Thread.Sleep(3000);
-            IWebElement loginInput = driver.FindElement(By.Id("login-username-form"));
-            loginInput = driver.FindElement(By.Name("username"));
-            loginInput.SendKeys(email);
-            loginInput.SendKeys(Keys.Enter);
-            Thread.Sleep(3000);
-            IWebElement passInput = driver.FindElement(By.Id("login-passwd"));
-            string password = extractfile(1, index, emailFilePath, driver);
-            passInput.SendKeys(password);
-            passInput.SendKeys(Keys.Enter);
 
-       }
-        catch (Exception)
-        {
 
-            Console.WriteLine("--------------error in login into email");
-        }
-        
+        string email = extractfile(0, index, emailFilePath, driver);
+        Thread.Sleep(3000);
+        IWebElement loginInput = driver.FindElement(By.Id("login-username-form"));
+        loginInput = driver.FindElement(By.Name("username"));
+        loginInput.SendKeys(email);
+        loginInput.SendKeys(Keys.Enter);
+        Thread.Sleep(3000);
+        IWebElement passInput = driver.FindElement(By.Id("login-passwd"));
+        string password = extractfile(1, index, emailFilePath, driver);
+        passInput.SendKeys(password);
+        passInput.SendKeys(Keys.Enter);
+
+
     }
-
-
     
     private static string extractfile(int zeroOrOne, int index, string filePath, IWebDriver driver = null)
     {
@@ -401,10 +399,7 @@ internal class Program
         }
         return result;
     }
-
-
-   
-
+ 
 
     static void closeBrowser(IWebDriver driver)
     {
@@ -431,100 +426,6 @@ internal class Program
             }
         }
     }
-
-
-    static async Task<string> tokenRequest(string siteKey, string captchaUrl, string apikey)
-    {
-        var client = new HttpClient();
-
-        // Create an object representing the task
-        var taskData = new
-        {
-            clientKey = apikey,
-            task = new
-            {
-                type = "ReCaptchaV2TaskProxyLess",
-                websiteURL = captchaUrl,
-                websiteKey = siteKey,
-                pageAction = "login"
-            }
-        };
-
-        // Serialize the object to JSON
-        var jsonContent = JsonConvert.SerializeObject(taskData);
-
-        // Prepare the content for the POST request as JSON
-        var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-
-        // Create the HttpRequestMessage
-        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.capsolver.com/createTask")
-        {
-            Content = content
-        };
-
-        // Send the request using Send
-        var response = client.Send(request);
-
-        // Read and parse the response
-        var jsonResponse = await response.Content.ReadAsStringAsync();
-        string taskId = JObject.Parse(jsonResponse)["taskId"].ToString();
-        Console.WriteLine($"request sent .......!");
-
-        string captchaSolution = "";
-        while (captchaSolution == "" || captchaSolution.Contains("processing"))
-        {
-            await Task.Delay(12000);
-            var client2 = new HttpClient();
-
-            var requestData = new
-            {
-                clientKey = apikey,
-                taskId = taskId
-            };
-
-            // Serialize the object to JSON
-            var jsonContent2 = JsonConvert.SerializeObject(requestData);
-
-            // Prepare the content for the POST request as JSON
-            var content2 = new StringContent(jsonContent2, Encoding.UTF8, "application/json");
-
-            // Create the HttpRequestMessage
-            var request2 = new HttpRequestMessage(HttpMethod.Post, "https://api.capsolver.com/getTaskResult")
-            {
-                Content = content2
-            };
-
-            // Send the request using Send
-            var response2 = client2.Send(request2);
-
-            // Read and parse the response
-            var jsonResponse2 = await response2.Content.ReadAsStringAsync();
-           
-                if (JObject.Parse(jsonResponse2)["solution"]!= null)
-            {
-                captchaSolution = JObject.Parse(jsonResponse2)["solution"]["gRecaptchaResponse"].ToString();
-                Console.WriteLine($"response received......!");
-            }
-            Console.WriteLine(jsonResponse2);
-            
-        }
-        Console.Out.WriteLine("token is ready......!");
-        return captchaSolution;
-    }
-
-
-
-
-        static void solveCaptcha(IWebDriver driver, string token)
-        {
-            IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
-            IWebElement recaptchaResponseElement = driver.FindElement(By.Id("g-recaptcha-response"));
-            js.ExecuteScript("arguments[0].removeAttribute('style');", recaptchaResponseElement);
-            js.ExecuteScript($"arguments[0].value = '{token}';", recaptchaResponseElement);
-        }
-
-
-
 
     static void DisplayLogo()
     {
