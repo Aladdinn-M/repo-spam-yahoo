@@ -295,9 +295,11 @@ internal class Program
         for (int i = from - 1; i < to; i++)
         {
             // Initialize ChromeDriver with the selected profile
-            ChromeOptions options = new ChromeOptions();
+            ChromeOptions options = optionProxy(i);
             string profile = Path.Combine(profilesDirectory, (i + 1).ToString());
             options.AddArgument($"--user-data-dir={profile}");
+
+
             IWebDriver driver = new ChromeDriver(options);
             string url = "https://mail.yahoo.com/d/folders/1";
             driver.Manage().Window.Maximize();
