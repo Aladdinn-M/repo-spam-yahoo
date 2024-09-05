@@ -5,8 +5,6 @@ using OpenQA.Selenium.Support.UI;
 using System;
 using System.Reflection;
 using System.Web;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
 using System.Text;
 using SeleniumExtras.WaitHelpers;
 using System.Diagnostics;
