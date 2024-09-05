@@ -23,8 +23,6 @@ internal class Program
     private static async Task Main(string[] args)
     {
 
-
-
         DisplayLogo();
         CreateFileIfNotExists(emailFileName);
         CreateFileIfNotExists(proxiesFileName);
@@ -32,13 +30,6 @@ internal class Program
         string profilesDirectory = createProfilesDirectory();
         await FirstMenu(profilesDirectory);
         
-
-
-
-
-
-
-
 
     }
 
@@ -128,14 +119,14 @@ internal class Program
                 string profilePath = Path.Combine(profilesDirectory, profileNumber.ToString());
 
                 // Proxy settings
-                string proxyHost = "104.238.50.75";
-                int proxyPort = 6621;
+                //string proxyHost = "geo.iproyal.com";
+               // int proxyPort = 12321;
 
 
 
                 // Set Chrome options
                 ChromeOptions options = new ChromeOptions();
-                //options.AddArguments($"--proxy-server=http://{proxyHost}:{proxyPort}");
+               // options.AddArguments($"--proxy-server=http://{proxyHost}:{proxyPort}");
                 string userAgent = GetRandomUserAgent();
                 options.AddArgument($"--user-agent={userAgent}");
                 options.AddArgument($"--user-data-dir={profilePath}");
@@ -143,14 +134,17 @@ internal class Program
 
                 // Initialize the ChromeDriver with the specified options
                 IWebDriver driver = new ChromeDriver(options);
+                driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(30);
+
+
 
                 //open yahoo spam link 
                 string url = "https://mail.yahoo.com/d/folders/6";
                 driver.Manage().Window.Maximize();
                 driver.Navigate().GoToUrl(url);
-                //string autoITScriptPath = @"ProxyAuth.exe";
+               // string autoITScriptPath = @"login_pass_geoiproyalcom_12321.exe";
                // Thread.Sleep(2000);
-               // Process.Start(autoITScriptPath);
+                //Process.Start(autoITScriptPath);
                // Thread.Sleep(2000);
 
 
@@ -171,45 +165,7 @@ internal class Program
         SaveListToFile(openedEmailsList, openedEmailFileName);
     }
 
-    private static void SaveListToFile(List<string> list, string filePath)
-    {
-        // Check if the file exists
-        if (File.Exists(filePath))
-        {
-            // Overwrite the file with empty content
-            File.WriteAllText(filePath, string.Empty);
-
-            // Write each item in the list to the file (append mode)
-            using (StreamWriter writer = new StreamWriter(filePath, true))
-            {
-                foreach (string item in list)
-                {
-                    writer.WriteLine(item);
-                }
-            }
-
-            Console.WriteLine("List has been saved to the file.");
-        }
-        else
-        {
-            Console.WriteLine("File does not exist.");
-        }
-    }
-
-
-
-
-    static void OpenTextFile(string filePath)
-    {
-        try
-        {
-            Process.Start("cmd", $"/c start {filePath}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"An error occurred while opening the text file: {ex.Message}");
-        }
-    }
+  
 
     public static async Task ReportNotSpamAsync(string profilesDirectory)
     {
@@ -219,6 +175,7 @@ internal class Program
         int from = fromTo.Item1;
         int to = fromTo.Item2;
         List<Task> tasks = new List<Task>();
+
         for (int i = from-1; i < to; i++)
         {
             // Initialize ChromeDriver with the selected profile
@@ -228,9 +185,12 @@ internal class Program
 
 
             IWebDriver driver = new ChromeDriver(options);
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(30);
+
             string url = "https://mail.yahoo.com/d/folders/6";
             driver.Manage().Window.Maximize();
             driver.Navigate().GoToUrl(url);
+
                 string autoITScriptPath = @"ProxyAuth.exe";
             // Thread.Sleep(2000);
                Process.Start(autoITScriptPath);
@@ -238,17 +198,14 @@ internal class Program
 
             Console.WriteLine($"Profile '{i}' has been opened.");
 
-
+            //==========================================Asyn Tasks==============================================
             //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
             tasks.Add(Task.Run(() => ReportNotSpam(driver)));
-
             //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         }
         // Await either all tasks to complete or a timeout of 10 minutes, whichever comes first
         Task allTasks = Task.WhenAll(tasks);
         Task delayTask = Task.Delay(TimeSpan.FromMinutes(10));
-
         Task completedTask = await Task.WhenAny(allTasks, delayTask);
 
         if (completedTask == delayTask)
@@ -261,32 +218,12 @@ internal class Program
         }
     }
 
-    private static ChromeOptions optionProxy(int index)
-    {
-        ChromeOptions options = new ChromeOptions();
-        Proxy proxy = new Proxy();
-
-        try
-        {
-            string proxiesFilePath = filePath("proxies.txt");
-            string proxyIp = extractfile(0, index, proxiesFilePath);
-            int proxyPort = int.Parse(extractfile(1, index, proxiesFilePath));
-            string ipAndPort = $"{proxyIp}:{proxyPort}";
-            proxy.HttpProxy = ipAndPort;
-            proxy.SslProxy = ipAndPort;
-
-            options.Proxy = proxy;
-        }
-        catch
-        {
-            Console.WriteLine("--------------error in Proxies  (browser without proxy) !!");
-        }
-        return options;
-    }
-
+   
 
     public static async Task ReportInboxAsyn(string profilesDirectory)
     {
+        OpenTextFile(proxiesFileName);
+
         (int, int) fromTo = MenuOpenExistingProfile(profilesDirectory);
         int from = fromTo.Item1;
         int to = fromTo.Item2;
@@ -301,22 +238,27 @@ internal class Program
 
 
             IWebDriver driver = new ChromeDriver(options);
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(30);
+
             string url = "https://mail.yahoo.com/d/folders/1";
             driver.Manage().Window.Maximize();
             driver.Navigate().GoToUrl(url);
+
+            string autoITScriptPath = @"ProxyAuth.exe";
+            
+            Process.Start(autoITScriptPath);
+            Thread.Sleep(2000);
+
             Console.WriteLine($"Profile '{i}' has been opened.");
 
-
+            //==========================================Asyn Tasks==============================================
             //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
             tasks.Add(Task.Run(() => InboxToArchive(driver)));
-
             //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         }
         // Await either all tasks to complete or a timeout of 10 minutes, whichever comes first
         Task allTasks = Task.WhenAll(tasks);
         Task delayTask = Task.Delay(TimeSpan.FromMinutes(10));
-
         Task completedTask = await Task.WhenAny(allTasks, delayTask);
 
         if (completedTask == delayTask)
@@ -330,14 +272,13 @@ internal class Program
     }
 
 
-    //=================================================================================================================
-    //=================================================================================================================
-    //=================================================================================================================
+
     public static async Task ClearSpamProfilesAsync(string profilesDirectory)
     {
         (int, int) fromTo = MenuOpenExistingProfile(profilesDirectory);
         int from = fromTo.Item1;
         int to = fromTo.Item2;
+
         List<Task> tasks = new List<Task>();
 
         for (int i = from - 1; i < to; i++)
@@ -346,17 +287,18 @@ internal class Program
             ChromeOptions options = new ChromeOptions();
             string profile = Path.Combine(profilesDirectory, (i + 1).ToString());
             options.AddArgument($"--user-data-dir={profile}");
+
             IWebDriver driver = new ChromeDriver(options);
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(30);
+
             string url = "https://mail.yahoo.com/d/folders/6";
             driver.Manage().Window.Maximize();
             driver.Navigate().GoToUrl(url);
             Console.WriteLine($"Profile '{i}' has been opened.");
 
-
+             //==========================================Asyn Tasks==============================================
             //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
             tasks.Add(Task.Run(() => ClearSpam(driver)));
-
             //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         }
         // Await either all tasks to complete or a timeout of 10 minutes, whichever comes first
@@ -374,13 +316,6 @@ internal class Program
             Console.WriteLine("All tasks completed successfully.");
         }
     }
-
-
-    //=================================================================================================================
-    //=================================================================================================================
-    //================================================================================================================= 
-
-
 
 
 
@@ -469,6 +404,32 @@ internal class Program
     }
 
 
+
+    private static ChromeOptions optionProxy(int index)
+    {
+        ChromeOptions options = new ChromeOptions();
+        Proxy proxy = new Proxy();
+
+        try
+        {
+            string proxiesFilePath = filePath("proxies.txt");
+            string proxyIp = extractfile(0, index, proxiesFilePath);
+            int proxyPort = int.Parse(extractfile(1, index, proxiesFilePath));
+            string ipAndPort = $"{proxyIp}:{proxyPort}";
+            proxy.HttpProxy = ipAndPort;
+            proxy.SslProxy = ipAndPort;
+
+            options.Proxy = proxy;
+        }
+        catch
+        {
+            Console.WriteLine("--------------error in Proxies  (browser without proxy) !!");
+        }
+        return options;
+    }
+
+
+
     private static string filePath(string filename)
     {
 
@@ -484,7 +445,48 @@ internal class Program
         return filePath;
 
     }
-   
+
+
+    private static void SaveListToFile(List<string> list, string filePath)
+    {
+        // Check if the file exists
+        if (File.Exists(filePath))
+        {
+            // Overwrite the file with empty content
+            File.WriteAllText(filePath, string.Empty);
+
+            // Write each item in the list to the file (append mode)
+            using (StreamWriter writer = new StreamWriter(filePath, true))
+            {
+                foreach (string item in list)
+                {
+                    writer.WriteLine(item);
+                }
+            }
+
+            Console.WriteLine("List has been saved to the file.");
+        }
+        else
+        {
+            Console.WriteLine("File does not exist.");
+        }
+    }
+
+
+
+
+    static void OpenTextFile(string filePath)
+    {
+        try
+        {
+            Process.Start("cmd", $"/c start {filePath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred while opening the text file: {ex.Message}");
+        }
+    }
+
 
     private static void CreateFileIfNotExists(string filePath)
     {
@@ -605,37 +607,56 @@ internal class Program
         // Dictionary or List of User Agents
         List<string> userAgents = new List<string>
         {
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0 Safari/537.75.14" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_1) AppleWebKit/536.25 (KHTML, like Gecko) Version/6.0 Safari/536.25" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.2 Safari/537.75.14" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_0) AppleWebKit/536.25 (KHTML, like Gecko) Version/6.0 Safari/536.25" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/536.28.10 (KHTML, like Gecko) Version/6.0.4 Safari/536.28.10" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/537.75.14" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.1 Safari/537.75.14" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/536.26.17 (KHTML, like Gecko) Version/6.0.2 Safari/536.26.17" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.77.4 (KHTML, like Gecko) Version/7.0.3 Safari/537.77.4" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_4) AppleWebKit/536.26.17 (KHTML, like Gecko) Version/6.0.2 Safari/536.26.17" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/536.30.1 (KHTML, like Gecko) Version/6.0.5 Safari/536.30.1" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0 Safari/537.75.14" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_4) AppleWebKit/536.30.1 (KHTML, like Gecko) Version/6.0.5 Safari/536.30.1" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_1) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0 Safari/537.75.14" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/536.28.10 (KHTML, like Gecko) Version/6.0.4 Safari/536.28.10" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.2 Safari/537.75.14" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.1 Safari/537.75.14" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_0) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0 Safari/537.75.14" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.77.4 (KHTML, like Gecko) Version/7.0.3 Safari/537.77.4" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.1 Safari/537.75.14" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0 Safari/537.75.14" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) AppleWebKit/536.30.1 (KHTML, like Gecko) Version/6.0.5 Safari/536.30.1" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A523 Safari/8536.25" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/536.30.1 (KHTML, like Gecko) Version/6.0.5 Safari/536.30.1" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0 Safari/537.75.14" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/536.28.10 (KHTML, like Gecko) Version/6.0.4 Safari/536.28.10" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/536.26.17 (KHTML, like Gecko) Version/6.0.2 Safari/536.26.17" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/536.30.1 (KHTML, like Gecko) Version/6.0.5 Safari/536.30.1" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A403 Safari/8536.25" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) AppleWebKit/536.28.10 (KHTML, like Gecko) Version/6.0.4 Safari/536.28.10" ,
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10B146 Safari/8536.25" ,
+            "Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Safari/605.1.15            ",
+            "Mozilla/5.0 (iPad; CPU OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Safari/605.1.15       ",
+            "Mozilla/5.0 (iPad; CPU OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15          ",
+            "Mozilla/5.0 (iPad; CPU OS 15_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.2 Safari/605.1.15       ",
+            "Mozilla/5.0 (iPad; CPU OS 14_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.7 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Safari/605.1.15            ",
+            "Mozilla/5.0 (iPad; CPU OS 13_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.3 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1.1 Safari/605.1.15       ",
+            "Mozilla/5.0 (iPad; CPU OS 16_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_2_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Safari/605.1.15        ",
+            "Mozilla/5.0 (iPad; CPU OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.4 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_3_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Safari/605.1.15          ",
+            "Mozilla/5.0 (iPad; CPU OS 15_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.1 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0.1 Safari/605.1.15         ",
+            "Mozilla/5.0 (iPad; CPU OS 13_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.4 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1.2 Safari/605.1.15       ",
+            "Mozilla/5.0 (iPad; CPU OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_2_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Safari/605.1.15          ",
+            "Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1 Safari/605.1.15         ",
+            "Mozilla/5.0 (iPad; CPU OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.6 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1 Safari/605.1.15         ",
+            "Mozilla/5.0 (iPad; CPU OS 16_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.2 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/10.0 Safari/602.1.50           ",
+            "Mozilla/5.0 (iPad; CPU OS 15_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.0.3 Safari/605.1.15       ",
+            "Mozilla/5.0 (iPad; CPU OS 14_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.5 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Safari/605.1.15            ",
+            "Mozilla/5.0 (iPad; CPU OS 12_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/9.1 Safari/601.5.17          ",
+            "Mozilla/5.0 (iPad; CPU OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.1 Safari/605.1.15       ",
+            "Mozilla/5.0 (iPad; CPU OS 15_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_0_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.1 Safari/605.1.15          ",
+            "Mozilla/5.0 (iPad; CPU OS 14_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.2 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/10.1 Safari/603.1.30         ",
+            "Mozilla/5.0 (iPad; CPU OS 13_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.6 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/600.8.9 (KHTML, like Gecko) Version/8.0.8 Safari/600.8.9          ",
+            "Mozilla/5.0 (iPad; CPU OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_6_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15          ",
+            "Mozilla/5.0 (iPad; CPU OS 13_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.7 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.0.1 Safari/605.1.15         ",
+            "Mozilla/5.0 (iPad; CPU OS 15_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10) AppleWebKit/600.1.25 (KHTML, like Gecko) Version/8.0 Safari/600.1.25            ",
+            "Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.85.10 (KHTML, like Gecko) Version/7.0.6 Safari/537.85.10       " 
         };
 
         // Randomly select a user agent
@@ -663,3 +684,4 @@ internal class Program
 }
 
 
+    
