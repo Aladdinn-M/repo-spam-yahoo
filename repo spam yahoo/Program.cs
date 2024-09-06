@@ -9,6 +9,7 @@ using System.Text;
 using SeleniumExtras.WaitHelpers;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 
 internal class Program
@@ -163,7 +164,15 @@ internal class Program
         SaveListToFile(openedEmailsList, openedEmailFileName);
     }
 
-  
+
+    // Import the SetForegroundWindow function from user32.dll
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    // Import the GetConsoleWindow function from kernel32.dll
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr GetConsoleWindow();
+
 
     public static async Task ReportNotSpamAsync(string profilesDirectory)
     {
@@ -173,6 +182,11 @@ internal class Program
         int from = fromTo.Item1;
         int to = fromTo.Item2;
         List<Task> tasks = new List<Task>();
+
+
+        // Get the handle for the console window
+        IntPtr consoleWindowHandle = GetConsoleWindow();
+
 
         for (int i = from-1; i < to; i++)
         {
@@ -188,13 +202,15 @@ internal class Program
             string url = "https://mail.yahoo.com/d/folders/6";
             driver.Manage().Window.Maximize();
             driver.Navigate().GoToUrl(url);
-
-                string autoITScriptPath = @"ProxyAuth.exe";
+            string autoITScriptPath = @"ProxyAuth.exe";
             // Thread.Sleep(2000);
-               Process.Start(autoITScriptPath);
-               Thread.Sleep(2000);
+            Process.Start(autoITScriptPath);
+            Thread.Sleep(2000);
 
-            Console.WriteLine($"Profile '{i}' has been opened.");
+            // Switch focus back to the console window
+            SetForegroundWindow(consoleWindowHandle);
+
+            Console.WriteLine($"Profile '" + (i + 1).ToString() + "' has been opened.");
 
             //==========================================Asyn Tasks==============================================
             //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -227,6 +243,9 @@ internal class Program
         int to = fromTo.Item2;
         List<Task> tasks = new List<Task>();
 
+        // Get the handle for the console window
+        IntPtr consoleWindowHandle = GetConsoleWindow();
+
         for (int i = from - 1; i < to; i++)
         {
             // Initialize ChromeDriver with the selected profile
@@ -247,7 +266,10 @@ internal class Program
             Process.Start(autoITScriptPath);
             Thread.Sleep(2000);
 
-            Console.WriteLine($"Profile '{i}' has been opened.");
+            // Switch focus back to the console window
+            SetForegroundWindow(consoleWindowHandle);
+
+            Console.WriteLine($"Profile '" + (i + 1).ToString() + "' has been opened.");
 
             //==========================================Asyn Tasks==============================================
             //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -279,6 +301,7 @@ internal class Program
 
         List<Task> tasks = new List<Task>();
 
+
         for (int i = from - 1; i < to; i++)
         {
             // Initialize ChromeDriver with the selected profile
@@ -292,9 +315,10 @@ internal class Program
             string url = "https://mail.yahoo.com/d/folders/6";
             driver.Manage().Window.Maximize();
             driver.Navigate().GoToUrl(url);
-            Console.WriteLine($"Profile '{i}' has been opened.");
 
-             //==========================================Asyn Tasks==============================================
+            Console.WriteLine($"Profile '" + (i + 1).ToString() + "' has been opened.");
+
+            //==========================================Asyn Tasks==============================================
             //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             tasks.Add(Task.Run(() => ClearSpam(driver)));
             //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
