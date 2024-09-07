@@ -29,7 +29,7 @@ internal class Program
         string profilesDirectory = createProfilesDirectory();
         await FirstMenu(profilesDirectory);
         
-
+        Console.ReadKey();
     }
 
 
@@ -134,7 +134,6 @@ internal class Program
                 // Initialize the ChromeDriver with the specified options
                 IWebDriver driver = new ChromeDriver(options);
                 driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(30);
-
 
 
                 //open yahoo spam link 
