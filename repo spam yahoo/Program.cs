@@ -10,6 +10,8 @@ using SeleniumExtras.WaitHelpers;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Numerics;
 
 
 internal class Program
@@ -22,7 +24,7 @@ internal class Program
     private static async Task Main(string[] args)
     {
 
-        DisplayLogo();
+        
         CreateFileIfNotExists(emailFileName);
         CreateFileIfNotExists(proxiesFileName);
         CreateFileIfNotExists(openedEmailFileName);
@@ -52,38 +54,62 @@ internal class Program
     private static async Task  FirstMenu( string profilesDirectory)
     {
         string choice;
+        int number;
        
-            Console.WriteLine("Choose an option:");
-            Console.WriteLine("1. Save a new profile");
-            Console.WriteLine("2. Reporting Spam ");
-            Console.WriteLine("3. Reporting Inbox");
-            Console.WriteLine("4. Clear spam for existing profile");
         do
             {
-
-                choice = Console.ReadLine();
+            DisplayLogo();
+            Console.WriteLine("==========Menu==========");
+            Console.WriteLine("Choose an option:");
+            Console.WriteLine("1. open profiles");
+            Console.WriteLine("2. Reporting Spam ");
+            Console.WriteLine("3. Reporting Inbox");
+            Console.WriteLine("4. Clean spam ");
+            Console.WriteLine("5. Clean inbox ");
+            Console.WriteLine("6. Save a new profiles");
+            Console.WriteLine("========================");
+            choice = Console.ReadLine();
 
                 switch (choice)
                 {
                     case "1":
-                        SaveNewProfile(profilesDirectory);
+                        OpenProfiles(profilesDirectory);
                         break;
                     case "2":
                         await ReportNotSpamAsync(profilesDirectory);
+                        Console.Clear();
+                        Console.WriteLine("==================Reporting Spam ends==================");
+                        FirstMenu(profilesDirectory);
                         break;
                     case "3":
                         await ReportInboxAsyn(profilesDirectory);
-                        break;
+                        Console.Clear();
+                        Console.WriteLine("==================Reporting Inbox ends==================");
+                        FirstMenu(profilesDirectory);
+                         break;
                     case "4":
                         await ClearSpamProfilesAsync(profilesDirectory);
+                        Console.Clear();
+                        Console.WriteLine("==================Spam is clean==================");
+                        FirstMenu(profilesDirectory);
+                    break;
+                    case "5":
+                         await ClearInboxProfilesAsync(profilesDirectory);
+                        Console.Clear();
+                        Console.WriteLine("==================Inbox is clean==================");
+                        FirstMenu(profilesDirectory);
+                    break;
+                    case "6":
+                        SaveNewProfile(profilesDirectory);
                         break;
+                    
                     default:
-                            Console.WriteLine("Invalid choice.");
-                            break;
+                        Console.WriteLine("Invalid choice.");
+                    break;
                 }
-        } while (choice !="1" && choice!="2");
-           
-        
+        } while (string.IsNullOrEmpty(choice) || int.TryParse(choice, out number) || number > 1 || number < 6);
+
+
     }
 
     public static void SaveNewProfile(string profilesDirectory)
@@ -163,9 +189,31 @@ internal class Program
         SaveListToFile(openedEmailsList, openedEmailFileName);
     }
 
+    public static  void OpenProfiles(string profilesDirectory)
+    {
+        (int, int) fromTo = MenuOpenExistingProfile(profilesDirectory);
+        int from = fromTo.Item1;
+        int to = fromTo.Item2;
+        List<Task> tasks = new List<Task>();
 
-    // Import the SetForegroundWindow function from user32.dll
-    [DllImport("user32.dll")]
+        for (int i = from - 1; i < to; i++)
+        {
+            // Initialize ChromeDriver with the selected profile
+            ChromeOptions options = new ChromeOptions();
+            string profile = Path.Combine(profilesDirectory, (i + 1).ToString());
+            options.AddArgument($"--user-data-dir={profile}");
+
+
+            IWebDriver driver = new ChromeDriver(options);
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(30);
+            string url = "https://mail.yahoo.com/d/folders/6";
+            driver.Manage().Window.Maximize();
+            driver.Navigate().GoToUrl(url);
+        }
+    }
+
+            // Import the SetForegroundWindow function from user32.dll
+            [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
 
     // Import the GetConsoleWindow function from kernel32.dll
@@ -340,26 +388,54 @@ internal class Program
 
 
 
-
-  
-
-    private static bool IsNotEmpty(IWebDriver driver)
+    public static async Task ClearInboxProfilesAsync(string profilesDirectory)
     {
-        try
-        {
-            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(3);
-            // Check if the "Spam is empty" message exists using text
-            IWebElement spamEmptyMessage = driver.FindElement(By.XPath("//span[contains(text(), 'is empty')]"));
+        (int, int) fromTo = MenuOpenExistingProfile(profilesDirectory);
+        int from = fromTo.Item1;
+        int to = fromTo.Item2;
 
-            // If the element is found, it means the spam is empty, so return false to break the loop
-            return spamEmptyMessage == null;
-        }
-        catch (NoSuchElementException)
+        List<Task> tasks = new List<Task>();
+
+
+        for (int i = from - 1; i < to; i++)
         {
-            // If the element is not found, it means spam is not empty, so continue the loop
-            return true;
+            // Initialize ChromeDriver with the selected profile
+            ChromeOptions options = new ChromeOptions();
+            string profile = Path.Combine(profilesDirectory, (i + 1).ToString());
+            options.AddArgument($"--user-data-dir={profile}");
+
+            IWebDriver driver = new ChromeDriver(options);
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(30);
+
+            string url = "https://mail.yahoo.com/d/folders/6";
+            driver.Manage().Window.Maximize();
+            driver.Navigate().GoToUrl(url);
+
+            Console.WriteLine($"Profile '" + (i + 1).ToString() + "' has been opened.");
+
+            //==========================================Asyn Tasks==============================================
+            //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            tasks.Add(Task.Run(() => ClearInbox(driver)));
+            //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        }
+        // Await either all tasks to complete or a timeout of 10 minutes, whichever comes first
+        Task allTasks = Task.WhenAll(tasks);
+        Task delayTask = Task.Delay(TimeSpan.FromMinutes(10));
+
+        Task completedTask = await Task.WhenAny(allTasks, delayTask);
+
+        if (completedTask == delayTask)
+        {
+            Console.WriteLine("Operation timed out.");
+        }
+        else
+        {
+            Console.WriteLine("All tasks completed successfully.");
         }
     }
+
+
+   
 
     private static async Task ReportNotSpam(IWebDriver driver)
     {
@@ -411,7 +487,7 @@ internal class Program
 
     private static async Task ClearSpam(IWebDriver driver)
     {
-        do
+        while (IsNotEmpty(driver))
         {
             IWebElement checkboxButton = driver.FindElement(By.CssSelector("button[data-test-id='checkbox']"));
             checkboxButton.Click();
@@ -419,11 +495,42 @@ internal class Program
             IWebElement notSpamButton = driver.FindElement(By.CssSelector("button[data-test-id='toolbar-perm-delete']"));
             notSpamButton.Click();
 
-        } while (true);
+        }
+        driver.Close();
+    }
+    private static async Task ClearInbox(IWebDriver driver)
+    {
+        while (IsNotEmpty(driver))
+        {
+            IWebElement checkboxButton = driver.FindElement(By.CssSelector("button[data-test-id='checkbox']"));
+            checkboxButton.Click();
+            Thread.Sleep(2000);
+            IWebElement notSpamButton = driver.FindElement(By.CssSelector("button[data-test-id='toolbar-delete']"));
+            notSpamButton.Click();
 
+        }
+        driver.Close();
     }
 
 
+
+    private static bool IsNotEmpty(IWebDriver driver)
+    {
+        try
+        {
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(3);
+            // Check if the "Spam is empty" message exists using text
+            IWebElement spamEmptyMessage = driver.FindElement(By.XPath("//span[contains(text(), 'is empty')]"));
+
+            // If the element is found, it means the spam is empty, so return false to break the loop
+            return spamEmptyMessage == null;
+        }
+        catch (NoSuchElementException)
+        {
+            // If the element is not found, it means spam is not empty, so continue the loop
+            return true;
+        }
+    }
     private static (int, int) MenuOpenExistingProfile(string profilesDirectory)
     {
         // List available profiles
