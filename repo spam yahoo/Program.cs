@@ -342,6 +342,74 @@ internal class Program
 
 
 
+  
+
+    private static bool IsNotEmpty(IWebDriver driver)
+    {
+        try
+        {
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(3);
+            // Check if the "Spam is empty" message exists using text
+            IWebElement spamEmptyMessage = driver.FindElement(By.XPath("//span[contains(text(), 'is empty')]"));
+
+            // If the element is found, it means the spam is empty, so return false to break the loop
+            return spamEmptyMessage == null;
+        }
+        catch (NoSuchElementException)
+        {
+            // If the element is not found, it means spam is not empty, so continue the loop
+            return true;
+        }
+    }
+
+    private static async Task ReportNotSpam(IWebDriver driver)
+    {
+        while (IsNotEmpty(driver))
+        {
+           
+                // Wait for the email list to load
+                WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+                wait.Until(ExpectedConditions.ElementExists(By.CssSelector("a[data-test-id='message-list-item']")));
+
+                // Locate the specific email
+                IWebElement Email = driver.FindElement(By.XPath("//a[@data-test-id='message-list-item']"));
+                Email.Click();
+
+                Thread.Sleep(2000);
+
+                // Locate the "Not Spam" button and click it
+                IWebElement notSpamButton = driver.FindElement(By.CssSelector("button[data-test-id='toolbar-not-spam']"));
+                notSpamButton.Click();
+
+                
+            
+        }
+        driver.Close();
+    }
+
+   
+
+
+    private static async Task InboxToArchive(IWebDriver driver) 
+    {
+        while (IsNotEmpty(driver))
+        {
+            // Wait for the email list to load
+            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+            wait.Until(ExpectedConditions.ElementExists(By.CssSelector("a[data-test-id='message-list-item']")));
+
+            // Locate the specific email using part of its subject or aria-label
+            IWebElement Email = driver.FindElement(By.XPath("//a[@data-test-id='message-list-item']"));
+            Email.Click();
+
+            Thread.Sleep(2000);
+            IWebElement notSpamButton = driver.FindElement(By.CssSelector("button[data-test-id='toolbar-archive']"));
+            notSpamButton.Click();
+
+        } 
+        driver.Close();
+    }
+
     private static async Task ClearSpam(IWebDriver driver)
     {
         do
@@ -350,37 +418,6 @@ internal class Program
             checkboxButton.Click();
             Thread.Sleep(2000);
             IWebElement notSpamButton = driver.FindElement(By.CssSelector("button[data-test-id='toolbar-perm-delete']"));
-            notSpamButton.Click();
-
-        } while (true);
-
-    }
-
-
-
-    private static async Task ReportNotSpam(IWebDriver driver)
-    {
-        do
-        {
-            IWebElement checkboxButton = driver.FindElement(By.CssSelector("button[data-test-id='icon-btn-checkbox']"));
-            checkboxButton.Click();
-            Thread.Sleep(2000);
-            IWebElement notSpamButton = driver.FindElement(By.CssSelector("button[data-test-id='toolbar-not-spam']"));
-            notSpamButton.Click();
-
-        } while (true);
-
-    }
-
-
-    private static async Task InboxToArchive(IWebDriver driver) 
-    {
-        do
-        {
-            IWebElement checkboxButton = driver.FindElement(By.CssSelector("button[data-test-id='icon-btn-checkbox']"));
-            checkboxButton.Click();
-            Thread.Sleep(2000);
-            IWebElement notSpamButton = driver.FindElement(By.CssSelector("button[data-test-id='toolbar-archive']"));
             notSpamButton.Click();
 
         } while (true);
