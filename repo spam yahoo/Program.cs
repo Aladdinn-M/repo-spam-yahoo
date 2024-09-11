@@ -67,6 +67,8 @@ internal class Program
             Console.WriteLine("4. Clean spam ");
             Console.WriteLine("5. Clean inbox ");
             Console.WriteLine("6. Save a new profiles");
+            Console.WriteLine("7. reply");
+
             Console.WriteLine("========================");
             choice = Console.ReadLine();
 
@@ -102,12 +104,15 @@ internal class Program
                     case "6":
                         SaveNewProfile(profilesDirectory);
                         break;
-                    
-                    default:
+                    case "7":
+                    replyMessagesAsync(profilesDirectory);
+                        break;
+
+                default:
                         Console.WriteLine("Invalid choice.");
                     break;
                 }
-        } while (string.IsNullOrEmpty(choice) || int.TryParse(choice, out number) || number > 1 || number < 6);
+        } while (string.IsNullOrEmpty(choice) || int.TryParse(choice, out number) || number > 1 || number < 7);
 
 
     }
@@ -279,7 +284,64 @@ internal class Program
         }
     }
 
-   
+
+    public static async Task replyMessagesAsync(string profilesDirectory)
+    {
+        OpenTextFile(proxiesFileName);
+
+        (int, int) fromTo = MenuOpenExistingProfile(profilesDirectory);
+        int from = fromTo.Item1;
+        int to = fromTo.Item2;
+        List<Task> tasks = new List<Task>();
+
+
+        // Get the handle for the console window
+        IntPtr consoleWindowHandle = GetConsoleWindow();
+
+
+        for (int i = from - 1; i < to; i++)
+        {
+            // Initialize ChromeDriver with the selected profile
+            ChromeOptions options = optionProxy(i);
+            string profile = Path.Combine(profilesDirectory, (i + 1).ToString());
+            options.AddArgument($"--user-data-dir={profile}");
+
+
+            IWebDriver driver = new ChromeDriver(options);
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(30);
+
+            string url = "https://mail.yahoo.com/d/folders/6";
+            driver.Manage().Window.Maximize();
+            driver.Navigate().GoToUrl(url);
+            string autoITScriptPath = @"ProxyAuth.exe";
+            // Thread.Sleep(2000);
+            Process.Start(autoITScriptPath);
+            Thread.Sleep(2000);
+
+            // Switch focus back to the console window
+            SetForegroundWindow(consoleWindowHandle);
+
+            Console.WriteLine($"Profile '" + (i + 1).ToString() + "' has been opened.");
+
+            //==========================================Asyn Tasks==============================================
+            //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            tasks.Add(Task.Run(() => replyMessage(driver)));
+            //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        }
+        // Await either all tasks to complete or a timeout of 10 minutes, whichever comes first
+        Task allTasks = Task.WhenAll(tasks);
+        Task delayTask = Task.Delay(TimeSpan.FromMinutes(10));
+        Task completedTask = await Task.WhenAny(allTasks, delayTask);
+
+        if (completedTask == delayTask)
+        {
+            Console.WriteLine("Operation timed out.");
+        }
+        else
+        {
+
+        }
+    }
 
     public static async Task ReportInboxAsyn(string profilesDirectory)
     {
@@ -435,7 +497,31 @@ internal class Program
     }
 
 
-   
+    private static async Task replyMessage(IWebDriver driver)
+    {
+        while (IsNotEmpty(driver))
+        {
+
+            // Wait for the email list to load
+            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+            wait.Until(ExpectedConditions.ElementExists(By.CssSelector("a[data-test-id='message-list-item']")));
+
+            // Locate the specific email
+            IWebElement Email = driver.FindElement(By.XPath("//a[@data-test-id='message-list-item']"));
+            Email.Click();
+
+            Thread.Sleep(2000);
+
+            // Locate the "Not Spam" button and click it
+            IWebElement notSpamButton = driver.FindElement(By.CssSelector("button[data-test-id='card-toolbar-button-reply']"));
+            notSpamButton.Click();
+
+            IWebElement textArea = driver.FindElement(By.CssSelector("button[data-test-id='rte']"));
+            textArea.SendKeys("skdjhfjksdhgjksdhgjksdhgkjhsdg");
+        }
+        driver.Close();
+    }
+
 
     private static async Task ReportNotSpam(IWebDriver driver)
     {
