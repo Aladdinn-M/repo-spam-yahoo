@@ -59,15 +59,16 @@ internal class Program
         do
             {
             DisplayLogo();
-            Console.WriteLine("==========Menu==========");
+            Console.WriteLine("=============Menu=============");
             Console.WriteLine("Choose an option:");
             Console.WriteLine("1. open profiles");
             Console.WriteLine("2. Reporting Spam ");
             Console.WriteLine("3. Reporting Inbox");
             Console.WriteLine("4. Clean spam ");
             Console.WriteLine("5. Clean inbox ");
-            Console.WriteLine("6. Save a new profiles");
-            Console.WriteLine("========================");
+            Console.WriteLine("6. Save a new profiles (manual)");
+            Console.WriteLine("7. Save a new profiles");
+            Console.WriteLine("==============================");
             choice = Console.ReadLine();
 
                 switch (choice)
@@ -75,39 +76,48 @@ internal class Program
                     case "1":
                         OpenProfiles(profilesDirectory);
                         break;
+
                     case "2":
                         await ReportNotSpamAsync(profilesDirectory);
                         Console.Clear();
                         Console.WriteLine("==================Reporting Spam ends==================");
                         FirstMenu(profilesDirectory);
                         break;
+
                     case "3":
                         await ReportInboxAsyn(profilesDirectory);
                         Console.Clear();
                         Console.WriteLine("==================Reporting Inbox ends==================");
                         FirstMenu(profilesDirectory);
                          break;
+
                     case "4":
                         await ClearSpamProfilesAsync(profilesDirectory);
                         Console.Clear();
                         Console.WriteLine("==================Spam is clean==================");
                         FirstMenu(profilesDirectory);
                     break;
+
                     case "5":
                          await ClearInboxProfilesAsync(profilesDirectory);
                         Console.Clear();
                         Console.WriteLine("==================Inbox is clean==================");
                         FirstMenu(profilesDirectory);
                     break;
+
                     case "6":
-                        SaveNewProfile(profilesDirectory);
+                        SaveManual(profilesDirectory);
                         break;
-                    
+
+                     case "7":
+                        SaveNewProfile(profilesDirectory);
+                    break;
+
                     default:
                         Console.WriteLine("Invalid choice.");
                     break;
                 }
-        } while (string.IsNullOrEmpty(choice) || int.TryParse(choice, out number) || number > 1 || number < 6);
+        } while (string.IsNullOrEmpty(choice) || int.TryParse(choice, out number) || number > 1 || number < 7);
 
 
     }
@@ -188,6 +198,87 @@ internal class Program
         }
         SaveListToFile(openedEmailsList, openedEmailFileName);
     }
+
+
+    public static void SaveManual(string profilesDirectory)
+    {
+        Console.WriteLine("Do you want to delete saved profiles :(yes/no) ");
+        string choice = Console.ReadLine();
+        if (choice.ToLower() == "yes" || choice.ToLower() == "y")
+        {
+            // Delete the profiles to create new ones 
+            if (Directory.Exists(profilesDirectory))
+                Directory.Delete(profilesDirectory, true);
+        }
+        OpenTextFile(emailFileName);
+
+        int profileNumber = 1;
+        Console.Write("enter Number of profiles you want to add : ");
+
+        List<string> openedEmailsList = new List<string>();
+
+        int NBofProfiles = int.Parse(Console.ReadLine());
+        for (int i = 0; i < NBofProfiles; i++)
+        {
+            try
+            {
+                // Determine the next available profile number
+
+                while (Directory.Exists(Path.Combine(profilesDirectory, profileNumber.ToString())))
+                {
+                    profileNumber++;
+                }
+
+                string profilePath = Path.Combine(profilesDirectory, profileNumber.ToString());
+
+                // Proxy settings
+                string proxyHost = "geo.iproyal.com";
+                 int proxyPort = 12321;
+
+
+
+                // Set Chrome options
+                ChromeOptions options = optionProxy(i);
+               // options.AddArguments($"--proxy-server=http://{proxyHost}:{proxyPort}");
+                string userAgent = GetRandomUserAgent();
+                options.AddArgument($"--user-agent={userAgent}");
+                options.AddArgument($"--user-data-dir={profilePath}");
+
+
+                // Initialize the ChromeDriver with the specified options
+                IWebDriver driver = new ChromeDriver(options);
+                driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(5);
+
+
+                //open yahoo spam link 
+                string url = "https://mail.yahoo.com/d/folders/6";
+                driver.Manage().Window.Maximize();
+                driver.Navigate().GoToUrl(url);
+                string autoITScriptPath = @"ProxyAuth.exe";
+                // Thread.Sleep(2000);
+                Process.Start(autoITScriptPath);
+                // Thread.Sleep(2000);
+
+
+
+                //fill the login and password fields
+                string filepath = filePath(emailFileName);
+                string openedEmail = fillLoginFields(driver, i, filepath);
+
+
+                openedEmailsList.Add(openedEmail);
+                Console.WriteLine($"Profile '{profileNumber}' has been saved.");
+            }
+            catch (Exception)
+            {
+                Console.WriteLine($"unexpacted error in the profile Number {profileNumber}");
+            }
+        }
+        SaveListToFile(openedEmailsList, openedEmailFileName);
+    }
+
+
+
 
     public static  void OpenProfiles(string profilesDirectory)
     {
