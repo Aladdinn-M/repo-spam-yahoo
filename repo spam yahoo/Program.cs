@@ -96,13 +96,13 @@
                         Console.Clear();
                         Console.WriteLine("==================Spam is clean==================");
                         FirstMenu(profilesDirectory);
-                    break;
+                        break;
                     case "6":
                          await ClearInboxProfilesAsync(profilesDirectory);
                         Console.Clear();
                         Console.WriteLine("==================Inbox is clean==================");
                         FirstMenu(profilesDirectory);
-                    break;
+                        break;
                     case "7":
                         SaveNewProfile(profilesDirectory);
                         break;
@@ -588,9 +588,10 @@
                 IWebElement checkboxButton = driver.FindElement(By.CssSelector("button[data-test-id='checkbox']"));
                 checkboxButton.Click();
                 Thread.Sleep(2000);
-                IWebElement notSpamButton = driver.FindElement(By.CssSelector("button[data-test-id='toolbar-perm-delete']"));
-                notSpamButton.Click();
-
+                IWebElement deleteButton = driver.FindElement(By.CssSelector("button[data-test-id='toolbar-perm-delete']"));
+                deleteButton.Click();
+                IWebElement okButton = driver.FindElement(By.CssSelector("button[data-test-id='primary-btn']"));
+                okButton.Click();
             }
             
         }
@@ -601,14 +602,11 @@
                 IWebElement checkboxButton = driver.FindElement(By.CssSelector("button[data-test-id='checkbox']"));
                 checkboxButton.Click();
                 Thread.Sleep(2000);
-                IWebElement notSpamButton = driver.FindElement(By.CssSelector("button[data-test-id='toolbar-delete']"));
-                notSpamButton.Click();
-
+                IWebElement deleteButton = driver.FindElement(By.CssSelector("button[data-test-id='toolbar-delete']"));
+                deleteButton.Click();
             }
             
         }
-
-
 
         private static bool IsNotEmpty(IWebDriver driver)
         {
