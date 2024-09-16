@@ -77,30 +77,33 @@
                         OpenProfiles(profilesDirectory);
                         break;
                     case "2":
+                        OpenProfilesProxy(profilesDirectory);
+                        break;
+                    case "3":
                         await ReportNotSpamAsync(profilesDirectory);
                         Console.Clear();
                         Console.WriteLine("==================Reporting Spam ends==================");
                         FirstMenu(profilesDirectory);
                         break;
-                    case "3":
+                    case "4":
                         await ReportInboxAsyn(profilesDirectory);
                         Console.Clear();
                         Console.WriteLine("==================Reporting Inbox ends==================");
                         FirstMenu(profilesDirectory);
                          break;
-                    case "4":
+                    case "5":
                         await ClearSpamProfilesAsync(profilesDirectory);
                         Console.Clear();
                         Console.WriteLine("==================Spam is clean==================");
                         FirstMenu(profilesDirectory);
                     break;
-                    case "5":
+                    case "6":
                          await ClearInboxProfilesAsync(profilesDirectory);
                         Console.Clear();
                         Console.WriteLine("==================Inbox is clean==================");
                         FirstMenu(profilesDirectory);
                     break;
-                    case "6":
+                    case "7":
                         SaveNewProfile(profilesDirectory);
                         break;
                     
@@ -516,7 +519,7 @@
         {
         try
         {
-            while (IsNotEmpty(driver))
+            while (true)
             {
                 // Wait for the email list to load
                 WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
@@ -535,9 +538,7 @@
                 IWebElement spamfolder = driver.FindElement(By.CssSelector("a[data-test-folder-name='Bulk']"));
                 spamfolder.Click();
             }
-            driver.Close();
-            driver.Quit();  // Properly close the browser
-            driver.Dispose();  // Dispose of the WebDriver instance
+            
         }
         catch (Exception ex) 
         {
@@ -552,7 +553,7 @@
         {
         try
         {
-            while (IsNotEmpty(driver))
+            while (true)
             {
                 // Wait for the email list to load
                 WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
@@ -570,9 +571,7 @@
                 inboxfolder.Click();
 
             }
-            driver.Close();
-            driver.Quit();  // Properly close the browser
-            driver.Dispose();  // Dispose of the WebDriver instance
+            
 
         }
         catch (Exception)
@@ -584,7 +583,7 @@
 
         private static async Task ClearSpam(IWebDriver driver)
         {
-            while (IsNotEmpty(driver))
+            while (true)
             {
                 IWebElement checkboxButton = driver.FindElement(By.CssSelector("button[data-test-id='checkbox']"));
                 checkboxButton.Click();
@@ -593,13 +592,11 @@
                 notSpamButton.Click();
 
             }
-            driver.Close();
-            driver.Quit();  // Properly close the browser
-            driver.Dispose();  // Dispose of the WebDriver instance
+            
         }
         private static async Task ClearInbox(IWebDriver driver)
         {
-            while (IsNotEmpty(driver))
+            while (true)
             {
                 IWebElement checkboxButton = driver.FindElement(By.CssSelector("button[data-test-id='checkbox']"));
                 checkboxButton.Click();
@@ -608,9 +605,7 @@
                 notSpamButton.Click();
 
             }
-            driver.Close();
-            driver.Quit();  // Properly close the browser
-            driver.Dispose();  // Dispose of the WebDriver instance
+            
         }
 
 
