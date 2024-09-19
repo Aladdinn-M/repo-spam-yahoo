@@ -485,7 +485,7 @@
                 driver.Manage().Timeouts().PageLoad = TimeSpan.FromSeconds(60); // Increase page load timeout
                 driver.Manage().Timeouts().AsynchronousJavaScript = TimeSpan.FromSeconds(30); // Timeout for async scripts
 
-            string url = "https://mail.yahoo.com/d/folders/6";
+            string url = "https://mail.yahoo.com/d/folders/1";  
                 driver.Manage().Window.Maximize();
                 driver.Navigate().GoToUrl(url);
 
